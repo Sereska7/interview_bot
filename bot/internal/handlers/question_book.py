@@ -5,6 +5,6 @@ from aiogram.fsm.context import FSMContext
 
 router = Router()
 
-@router.message(F.text == "🧠 Пройти тест")
-async def test_section(message: types.Message):
+@router.message(F.text == "📚 Сборник вопросов")
+async def question_book_section(message: types.Message):
     await message.answer(text="Окей")

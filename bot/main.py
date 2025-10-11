@@ -2,10 +2,8 @@ import asyncio
 from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
 
-from bot.internal.handlers.start import router as router_start
-from bot.pkg.models.core.containers import ContainerMiddleware
+from bot.internal.handlers import routers
 from bot.pkg.settings import settings
-from bot.configuration import __containers__
 
 
 async def main():
@@ -15,7 +13,9 @@ async def main():
     dp = Dispatcher()
 
     # Роутеры
-    dp.include_router(router_start)
+    for router in routers:
+        dp.include_router(router)
+
     await dp.start_polling(bot, skip_updates=True)
 
 
