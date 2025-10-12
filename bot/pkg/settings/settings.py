@@ -5,6 +5,7 @@ from dotenv import find_dotenv
 from pydantic import PostgresDsn, model_validator
 from pydantic.types import PositiveInt, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from bot.pkg.models.core.logger import LoggerLevel
 
 
 __all__ = ["Settings", "get_settings"]
@@ -84,10 +85,18 @@ class Postgresql(_Settings):
 
         return data
 
+class Logging(_Settings):
+    """Logging settings."""
+
+    #: StrictStr: Level of logging which outs in std
+    LEVEL: LoggerLevel = LoggerLevel.DEBUG
+
 
 class Settings(_Settings):
 
     POSTGRES: Postgresql
+
+    LOGGER: Logging
 
     BotSettings: BotSettings
 

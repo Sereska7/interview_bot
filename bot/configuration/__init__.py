@@ -22,5 +22,12 @@ __containers__ = Containers(
 )
 
 v1_container = V1Services()
-v1_container.wire(modules=["bot.internal.handlers.start"])
+v1_container.wire(
+    modules=[
+            "bot.internal.handlers.start",
+            "bot.internal.handlers.test",
+            "bot.internal.handlers.exam",
+            "bot.internal.handlers.random_question",
+        ]
+)
 

@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 
 from bot.internal.handlers import routers
 from bot.pkg.settings import settings
+from bot.configuration import __containers__
+
 
 
 async def main():
