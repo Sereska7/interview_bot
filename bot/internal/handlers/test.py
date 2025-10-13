@@ -11,6 +11,7 @@ from bot.internal.keyboards.level import level_keyboard
 from bot.internal.keyboards.test import keyboard_test, start_test_kb
 from bot.internal.services.v1.question import QuestionService
 from bot.internal.states.test_state import TestStates
+from bot.pkg.models.sql_models.question import DifficultyLevel
 from bot.utils.flow.test_flow import send_next_question
 from bot.pkg.models import v1 as models
 
@@ -90,12 +91,15 @@ async def start_test(
     state: FSMContext,
     question_service: QuestionService = Provide[V1Services.question_service]
 ):
+
     _, topic, level = query.data.split(":")
+
+    await query.message.delete()
 
     # Получаем 10 вопросов из базы по теме и уровню
     cmd = models.QuestionReadCommand(
-        category=topic,
-        difficulty=level,
+        category=topic.capitalize(),
+        difficulty=DifficultyLevel[level.upper()],
         limit=10
     )
     questions = await question_service.get_questions(cmd)
@@ -122,3 +126,26 @@ async def start_test(
     await send_next_question(query.message.chat.id, state, query.message.bot)
 
     await query.answer()
+
+
+@router.callback_query(F.data.startswith("answer:"), StateFilter(TestStates.in_progress))
+async def process_answer(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    current_q = data["current_q"]
+    questions = data["questions"]
+    question = questions[current_q]
+
+    selected_index = int(callback.data.split(":")[1])
+    selected_key = list(question.options.keys())[selected_index]
+
+    correct = selected_key == question.correct_option
+
+    results = data.get("results", [])
+    results.append({"question_id": question.id, "correct": correct})
+    await state.update_data(results=results, current_q=current_q + 1)
+
+    await callback.answer("Ответ принят ✅")
+
+    # Редактируем сообщение текущим вопросом
+    message_id = callback.message.message_id
+    await send_next_question(callback.message.chat.id, state, callback.message.bot, message_id=message_id)

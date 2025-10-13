@@ -42,8 +42,4 @@ class QuestionRepository(Repository):
             result = await session.execute(stmt)
             questions = result.scalars().all()
 
-            # Преобразуем в Pydantic модели
-            questions_models: list[models.Question] = [
-                models.Question.model_validate(q) for q in questions
-            ]
-            return questions_models
+            return questions
