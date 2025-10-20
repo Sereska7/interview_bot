@@ -86,7 +86,7 @@ class Repository(ABC):
     async def update(self, cmd: Model) -> Model:
         """Update model.
 
-        Notes: In this method cmd must contain id of the model for update and ALL
+        Notes: In this method cmd must contain question_id of the model for update and ALL
         fields for update.
 
         Returns:

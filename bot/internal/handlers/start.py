@@ -7,7 +7,7 @@ from bot.pkg.keyboards.main import main_menu_kb
 from bot.internal.services.v1 import Services as V1Services
 from bot.internal.services.v1.user import UserService
 from bot.pkg.models import v1 as models
-from bot.utils.constants import WELCOME_TEXT, TEXT_MAIN_MENU
+from bot.utils.constants import WELCOME_TEXT, TEXT_MAIN_MENU, escape_md
 from bot.utils import delete_old_messages, save_message_id
 
 
@@ -48,7 +48,7 @@ async def start_command(
     start_msg = await message.answer(
         WELCOME_TEXT,
         reply_markup=main_menu_kb,
-        parse_mode="MarkdownV2"
+        parse_mode="Markdown"
     )
 
     await state.update_data({
@@ -95,7 +95,7 @@ async def handle_back(query: types.CallbackQuery, state: FSMContext):
         chat_id=query.message.chat.id,
         text=TEXT_MAIN_MENU,
         reply_markup=main_menu_kb,
-        parse_mode="MarkdownV2"
+        parse_mode="Markdown"
     )
 
     await state.update_data(start_msg_id=start_msg.message_id)

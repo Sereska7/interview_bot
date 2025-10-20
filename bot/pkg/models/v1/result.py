@@ -21,7 +21,7 @@ class BaseResult(BaseModel):
 
 class Result(BaseResult):
 
-    id: int
+    result_id: int
     user_id: UUID
     question_id: int
     session_id: int
@@ -32,7 +32,7 @@ class Result(BaseResult):
 
 class ResultResponse(BaseResult):
 
-    id: int
+    result_id: int
     user_id: UUID
     question_id: int
     session_id: int

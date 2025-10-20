@@ -1,3 +1,4 @@
+import html
 import re
 
 WELCOME_TEXT = (
@@ -25,27 +26,89 @@ TEXT_MAIN_MENU = (
     "🏆 Смотреть рейтинг и сравнивать себя с другими пользователями"
 )
 
+TEST_TEXT = (
+    "🧠 <b>Раздел: Тесты</b>\n\n"
+    "Выберите тему, по которой хотите пройти тест:"
+)
+
+def test_topic(topic):
+    return (
+        f"✅ Вы выбрали тему: <b>{topic.capitalize()}</b>\n\n"
+        "Выберите уровень сложности:"
+    )
+
+def text_level(topic, level):
+    return (
+        f"✅ Тема: <b>{topic.capitalize()}</b>\n"
+        f"⚡ Уровень: <b>{level.capitalize()}</b>\n\n"
+        "Нажмите кнопку ниже, чтобы начать тест:"
+    )
+
 
 def escape_md(text: str) -> str:
-    return re.sub(r'([_*\[\]()~`>#+\-=|{}.!\\])', r'\\\1', text)
+    """
+    Экранирует все спецсимволы для Telegram MarkdownV2.
+    """
+    if not text:
+        return ""
+    return re.sub(r'([_*\[\]()~`>#+\-=|{}.!])', r'\\\1', text)
+
+
+def escape_html(text: str) -> str:
+    """Экранирует HTML-спецсимволы, чтобы Telegram не падал."""
+    if not text:
+        return ""
+    return html.escape(text)
 
 
 def format_test_result(correct_answers: int, total_questions: int) -> str:
     """
-    Форматирует текст с результатами теста для отправки пользователю.
-
-    Args:
-        correct_answers (int): Количество правильных ответов.
-        total_questions (int): Общее количество вопросов.
-
-    Returns:
-        str: Текст с результатами теста в формате MarkdownV2.
+    Форматирует текст с результатами теста для Telegram (HTML).
     """
-
     incorrect_answers = total_questions - correct_answers
     return (
-        f"🎉 *Тест завершён!*\n\n"
-        f"✅ *Правильных ответов:* {correct_answers}\n"
-        f"❌ *Неправильных ответов:* {incorrect_answers}\n\n"
-        f"📊 *Результат:* {correct_answers}/{total_questions}\n"
+        f"🎉 <b>Тест завершён!</b>\n\n"
+        f"✅ <b>Правильных ответов:</b> {correct_answers}\n"
+        f"❌ <b>Неправильных ответов:</b> {incorrect_answers}\n\n"
+        f"📊 <b>Результат:</b> {correct_answers}/{total_questions}"
     )
+
+
+def format_test_result_detailed(results, correct_count: int, total: int) -> str:
+    """
+    Форматирует подробный отчёт о тесте с ошибками в Telegram (HTML-разметка).
+
+    Args:
+        results (list): Список результатов по вопросам.
+        correct_count (int): Количество правильных ответов.
+        total (int): Общее количество вопросов.
+
+    Returns:
+        str: Готовый HTML-текст для отправки пользователю.
+    """
+
+    text_lines = [
+        f"📊 <b>Ваш результат:</b> {correct_count} из {total} ✅",
+        "",
+        "<b>Ошибки:</b>"
+    ]
+
+    separator = "━━━━━━━━━━━━━━━━━━"
+
+    for i, r in enumerate(results, start=1):
+        if r.is_correct:
+            continue
+
+        q = r.question
+        question_text = escape_html(q.question_text)
+        correct_option_text = escape_html(q.options[q.correct_option])
+        explanation = escape_html(q.explanation or "Нет объяснения")
+
+        text_lines.append(
+            f"{separator}\n\n"
+            f"❌ <b>№{i}.</b> {question_text}\n"
+            f"✅ <b>{correct_option_text}</b>\n"
+            f"💡 <i>{explanation}</i>\n"
+        )
+
+    return "\n".join(text_lines).strip()

@@ -1,6 +1,3 @@
-
-from uuid import UUID
-
 from sqlalchemy.sql.expression import select
 
 from bot.internal.repository.repository import Repository
@@ -40,14 +37,14 @@ class ResultRepository(Repository):
         async with get_connection() as session:
             results = await session.execute(
                 select(Result, Question)
-                .join(Question, Result.question_id == Question.id)
+                .join(Question, Result.question_id == Question.question_id)
                 .where(Result.session_id == session_id)
             )
             rows = results.all()
 
             return [
                 models.ResultResponse(
-                    id=r.id,
+                    result_id=r.result_id,
                     user_id=r.user_id,
                     question_id=r.question_id,
                     session_id=r.session_id,
@@ -55,7 +52,7 @@ class ResultRepository(Repository):
                     is_correct=r.is_correct,
                     answered_at=r.answered_at,
                     question=models.QuestionResponse(
-                        id=q.id,
+                        question_id=q.question_id,
                         options=q.options,
                         question_text=q.question_text,
                         correct_option=q.correct_option,

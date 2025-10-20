@@ -6,7 +6,7 @@ from bot.internal.services.v1 import SessionService
 from bot.internal.services.v1 import Services as V1Services
 from bot.utils import save_message_id
 from bot.pkg.models import v1 as models
-from bot.utils.constants import format_test_result
+from bot.utils.constants import format_test_result, escape_md
 
 
 @inject
@@ -59,22 +59,21 @@ async def send_next_question(
             chat_id=chat_id,
             text=text,
             reply_markup=result_test_kb,
-            parse_mode="MarkdownV2"
+            parse_mode="HTML"
         )
         await save_message_id(state, msg.message_id)
 
         await state.update_data({
             "current_q": 0,
             "answers": [],
-            "questions": None,
-            "session_id": None,
             "current_message_id": msg.message_id
         })
 
         return msg.message_id
 
     question = questions[current_q]
-    text = f"Вопрос {current_q + 1}: {question.question_text}"
+    question_text = escape_md(question.question_text)
+    text = f"📘 *Вопрос {current_q + 1}:*\n\n*{question_text}*"
 
     if message_id:
         try:
@@ -82,20 +81,23 @@ async def send_next_question(
                 text=text,
                 chat_id=chat_id,
                 message_id=message_id,
-                reply_markup=process_test_kb(question, current_q)
+                reply_markup=process_test_kb(question, current_q),
+                parse_mode="MarkdownV2"
             )
         except Exception:
             msg = await bot.send_message(
                 chat_id,
                 text=text,
-                reply_markup=process_test_kb(question, current_q)
+                reply_markup=process_test_kb(question, current_q),
+                parse_mode="MarkdownV2"
             )
             message_id = msg.message_id
     else:
         msg = await bot.send_message(
             chat_id,
             text=text,
-            reply_markup=process_test_kb(question, current_q)
+            reply_markup=process_test_kb(question, current_q),
+            parse_mode="MarkdownV2"
         )
         message_id = msg.message_id
 

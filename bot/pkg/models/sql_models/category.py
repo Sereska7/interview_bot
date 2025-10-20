@@ -10,7 +10,7 @@ from bot.pkg.models.base_model import Base
 class Category(Base):
     __tablename__ = "category"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    category_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 

@@ -6,6 +6,7 @@ from bot.internal.repository.v1.postgresql.question import QuestionRepository
 from bot.pkg.models import v1 as models
 from bot.pkg.models.sql_models.question import DifficultyLevel
 from bot.utils import save_message_id
+from bot.utils.constants import escape_md
 
 
 class QuestionService:
@@ -16,7 +17,7 @@ class QuestionService:
     async def get_questions(
         self,
         cmd: models.QuestionReadCommand
-    ):
+    ) -> list[models.Question] | None:
         """"""
 
         questions = await self.question_repository.read_questions_by_filters(cmd)
@@ -26,7 +27,6 @@ class QuestionService:
             correct_key = question.correct_option
             correct_value = options[correct_key]
 
-            # Разделяем ключи и значения
             keys = list(options.keys())
             values = list(options.values())
 
@@ -49,7 +49,7 @@ class QuestionService:
             chat_id: int,
             state: FSMContext,
             bot
-    ) -> list:
+    ) -> list[models.Question] | None:
         cmd = models.QuestionReadCommand(
             category=category.capitalize(),
             difficulty=DifficultyLevel[level.upper()],
@@ -59,7 +59,8 @@ class QuestionService:
         if not questions:
             msg = await bot.send_message(
                 chat_id=chat_id,
-                text="❌ К сожалению, вопросы для этой темы/уровня не найдены."
+                text="❌ К сожалению, вопросы для этой темы/уровня не найдены.",
+                parse_mode="HTML"
             )
             await save_message_id(state, msg.message_id)
             return []

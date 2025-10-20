@@ -20,14 +20,15 @@ if config.config_file_name is not None:
 # Метаданные моделей
 target_metadata = Base.metadata
 
+
 def get_sync_dsn() -> str:
-    """Конвертируем asyncpg DSN в sync DSN для Alembic"""
+    """Конвертируем asyncpg DSN в sync DSN для Alembic."""
     url = settings.POSTGRES.DSN
     return url.replace("postgresql+asyncpg://", "postgresql://", 1)
 
 
 def run_migrations_offline() -> None:
-    """Миграции в offline режиме (без подключения к БД)"""
+    """Миграции в offline-режиме (без подключения к БД)."""
     sync_dsn = get_sync_dsn()
     context.configure(
         url=sync_dsn,
@@ -35,21 +36,25 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
+
     with context.begin_transaction():
         context.run_migrations()
 
-def run_migrations_online() -> None:
-    """Миграции в online режиме (с подключением к БД)"""
-    sync_dsn = get_sync_dsn()
 
+def run_migrations_online() -> None:
+    """Миграции в online-режиме (с подключением к БД)."""
+    sync_dsn = get_sync_dsn()
     engine = create_engine(sync_dsn)
+
     with engine.connect() as connection:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
         )
+
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()

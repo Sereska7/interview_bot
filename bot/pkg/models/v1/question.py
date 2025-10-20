@@ -15,7 +15,7 @@ class BaseQuestion(BaseModel):
 
 
 class Question(BaseModel):
-    id: int
+    question_id: int
     question_text: str
     options: dict[str, str]
     correct_option: str
@@ -26,7 +26,7 @@ class Question(BaseModel):
 
 
 class QuestionResponse(BaseModel):
-    id: int
+    question_id: int
     options: dict[str, str]
     question_text: str
     correct_option: str

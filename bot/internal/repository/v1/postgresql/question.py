@@ -15,21 +15,18 @@ class QuestionRepository(Repository):
     async def read_questions_by_filters(
         self,
         cmd: models.QuestionReadCommand
-    ) -> list[models.Question]:
+    ) -> list[models.Question] | None:
         """
         Возвращает список вопросов по категории и уровню сложности.
         """
         async with get_connection() as session:
-            # Получаем id категории по имени
-            category_stmt = select(Category.id).where(Category.name == cmd.category)
+            category_stmt = select(Category.category_id).where(Category.name == cmd.category)
             category_result = await session.execute(category_stmt)
             category_id = category_result.scalar_one_or_none()
 
             if category_id is None:
-                # Если такой категории нет, возвращаем пустой список
                 return []
 
-            # Теперь достаем вопросы по id категории
             stmt = (
                 select(Question)
                 .where(

@@ -12,8 +12,7 @@ from bot.internal.services.v1.question import QuestionService
 from bot.internal.services.v1.result import ResultService
 from bot.internal.services.v1.session import SessionService
 from bot.pkg.states.test_state import TestStates
-from bot.pkg.models.sql_models.question import DifficultyLevel
-from bot.utils.constants import escape_md
+from bot.utils.constants import TEST_TEXT, test_topic, text_level, format_test_result_detailed
 from bot.utils.flow.test_flow import send_next_question
 from bot.pkg.models import v1 as models
 from bot.utils import delete_old_messages, save_message_id
@@ -25,9 +24,9 @@ router = Router()
 @router.message(F.text == "🧠 Пройти тест")
 @inject
 async def test_section(
-        message: types.Message,
-        state: FSMContext,
-        user_service: UserService = Provide[V1Services.user_service]
+    message: types.Message,
+    state: FSMContext,
+    user_service: UserService = Provide[V1Services.user_service]
 ):
     """
     Обрабатывает нажатие кнопки '🧠 Пройти тест' и переводит пользователя в раздел тестов.
@@ -53,10 +52,9 @@ async def test_section(
     await message.delete()
 
     msg = await message.answer(
-        "🧠 *Раздел: Тесты*\n\n"
-        "Выберите тему, по которой хотите пройти тест:",
+        text=TEST_TEXT,
         reply_markup=keyboard_test,
-        parse_mode="MarkdownV2"
+        parse_mode="HTML"
     )
     await save_message_id(state, msg.message_id)
 
@@ -88,10 +86,9 @@ async def handle_topic_choice(
     await state.set_state(TestStates.select_level)
 
     await query.message.edit_text(
-        f"✅ Вы выбрали тему: *{topic.capitalize()}*\n\n"
-        "Выберите уровень сложности:",
+        text=test_topic(topic),
         reply_markup=level_keyboard(topic),
-        parse_mode="MarkdownV2"
+        parse_mode="HTML"
     )
     await query.answer()
 
@@ -113,13 +110,13 @@ async def handle_level_choice(query: CallbackQuery, state: FSMContext):
 
     _, topic, level = query.data.split(":")
 
+
     if level == "back":
         await state.set_state(TestStates.select_topic)
         await query.message.edit_text(
-            "🧠 *Раздел: Тесты*\n\n"
-            "Выберите тему, по которой хотите пройти тест:",
+            text=TEST_TEXT,
             reply_markup=keyboard_test,
-            parse_mode="MarkdownV2"
+            parse_mode="HTML"
         )
         return
 
@@ -127,11 +124,9 @@ async def handle_level_choice(query: CallbackQuery, state: FSMContext):
     await state.set_state(TestStates.ready_to_start)
 
     await query.message.edit_text(
-        f"✅ Тема: *{topic.capitalize()}*\n"
-        f"⚡ Уровень: *{level.capitalize()}*\n\n"
-        "Нажмите кнопку ниже, чтобы начать тест:",
+        text=text_level(topic, level),
         reply_markup=start_test_kb(topic, level),
-        parse_mode="MarkdownV2"
+        parse_mode="HTML"
     )
 
     await query.answer()
@@ -165,10 +160,9 @@ async def start_test(
     if level == "back":
         await state.set_state(TestStates.select_level)
         await query.message.edit_text(
-            f"✅ Вы выбрали тему: *{topic.capitalize()}*\n\n"
-            "Выберите уровень сложности:",
+            text=test_topic(topic),
             reply_markup=level_keyboard(topic),
-            parse_mode="MarkdownV2"
+            parse_mode="HTML"
         )
         await query.answer()
         return
@@ -181,6 +175,9 @@ async def start_test(
     questions = await question_service.get_questions_or_alert(
         topic, level, query.message.chat.id, state, query.message.bot
     )
+    if not questions:
+        await query.answer()
+        return
 
     data = await state.get_data()
     user_id = data.get("user_id")
@@ -242,7 +239,7 @@ async def process_answer(
     session_id = data.get("session_id")
     cmd = models.ResultCreateCommand(
         user_id=user_id,
-        question_id=question.id,
+        question_id=question.question_id,
         session_id=session_id,
         chosen_option=selected_key,
         is_correct=correct
@@ -250,7 +247,7 @@ async def process_answer(
     await result_service.create_result(cmd)
 
     results = data.get("results", [])
-    results.append({"question_id": question.id, "correct": correct})
+    results.append({"question_id": question.question_id, "correct": correct})
     await state.update_data(results=results, current_q=current_q + 1)
 
     await callback.answer("Ответ принят ✅")
@@ -302,28 +299,11 @@ async def view_answers(
     correct_count = sum(1 for r in results if r.is_correct)
     total = len(results)
 
-    text_lines = [f"📊 Ваш результат: {correct_count} из {total} ✅", "", "Ошибки:"]
-
-    for i, r in enumerate(results, start=1):
-        if r.is_correct:
-            continue
-
-        q = r.question
-        question_text = escape_md(q.question_text)
-        correct_option_text = escape_md(q.options[q.correct_option])
-        explanation = escape_md(q.explanation)
-
-        text_lines.append(
-            f"❌ №{i} {question_text}\n"
-            f"✅ *{correct_option_text}*\n"
-            f"💡 {explanation}\n"
-        )
-
-    text = "\n".join(text_lines)
+    text = format_test_result_detailed(results, correct_count, total)
 
     await callback.message.edit_text(
         text=text.strip(),
-        parse_mode="MarkdownV2",
+        parse_mode="HTML",
         reply_markup=result_answers_kb
     )
     await callback.answer()
@@ -373,7 +353,7 @@ async def new_test(
         return
 
     await state.update_data(
-        session_id=new_session.id,
+        session_id=new_session.session_id,
         questions=questions,
         current_q=0,
         results=[]
@@ -429,7 +409,7 @@ async def retry_test(
     new_session = await session_service.create_session(cmd)
 
     await state.update_data(
-        session_id=new_session.id,
+        session_id=new_session.session_id,
         questions=questions,
         current_q=0,
         results=[]

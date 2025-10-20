@@ -22,4 +22,4 @@ class Session(Base):
     score: Mapped[Optional[int]] = mapped_column(default=0)
 
     user = relationship("User", back_populates="sessions")
-    results = relationship("Result", back_populates="sessions", cascade="all, delete-orphan")
+    results = relationship("Result", back_populates="session", cascade="all, delete-orphan")

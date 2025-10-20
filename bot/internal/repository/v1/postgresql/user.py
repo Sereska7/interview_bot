@@ -14,7 +14,7 @@ class UserRepository(Repository):
     async def get_by_telegram_id(
         self,
         telegram_id: int
-    ) -> models.User:
+    ) -> models.User | None:
         async with get_connection() as session:
             result = await session.execute(
                 select(User).where(User.telegram_id == telegram_id)
