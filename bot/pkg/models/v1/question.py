@@ -5,7 +5,8 @@ from bot.pkg.models.sql_models.question import DifficultyLevel
 
 __all__ = [
     "Question",
-    "QuestionReadCommand"
+    "QuestionReadCommand",
+    "QuestionResponse"
 ]
 
 
@@ -22,6 +23,14 @@ class Question(BaseModel):
     difficulty: DifficultyLevel
     explanation: str | None = None
     created_at: datetime
+
+
+class QuestionResponse(BaseModel):
+    id: int
+    options: dict[str, str]
+    question_text: str
+    correct_option: str
+    explanation: str
 
 
 class QuestionReadCommand(BaseQuestion):

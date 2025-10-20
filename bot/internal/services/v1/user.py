@@ -17,3 +17,9 @@ class UserService:
             print("Пользователь существует")
             return existing_user
         return await self.user_repository.create(cmd)
+
+    async def get_by_telegram_id(
+        self,
+        user_tg_id: int
+    ):
+        return await self.user_repository.get_by_telegram_id(user_tg_id)

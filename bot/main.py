@@ -18,7 +18,7 @@ async def main():
     for router in routers:
         dp.include_router(router)
 
-    await dp.start_polling(bot, skip_updates=True)
+    await dp.start_polling(bot, skip_updates=False)
 
 
 if __name__ == "__main__":

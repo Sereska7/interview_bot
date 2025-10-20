@@ -13,7 +13,7 @@ from bot.pkg.models.base_model import Base
 class Session(Base):
     __tablename__ = "session"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    session_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[UUIDType] = mapped_column(ForeignKey("user.user_id", ondelete="CASCADE"))
     category: Mapped[str] = mapped_column(String(100), nullable=True)
 

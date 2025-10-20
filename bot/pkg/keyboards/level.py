@@ -12,7 +12,7 @@ def level_keyboard(topic: str) -> InlineKeyboardMarkup:
                 InlineKeyboardButton(text="🧠 Senior", callback_data=f"level:{topic}:senior")
             ],
             [
-                InlineKeyboardButton(text="↩️ Назад", callback_data="back")
+                InlineKeyboardButton(text="↩️ Назад", callback_data=f"level:{topic}:back")
             ]
         ]
     )

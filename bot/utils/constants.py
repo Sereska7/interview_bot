@@ -1,3 +1,5 @@
+import re
+
 WELCOME_TEXT = (
     "👋 Привет! Я бот для подготовки к IT-собеседованиям.\n\n"
     "Ты можешь:\n"
@@ -22,3 +24,28 @@ TEXT_MAIN_MENU = (
     "📈 Отслеживать прогресс\n"
     "🏆 Смотреть рейтинг и сравнивать себя с другими пользователями"
 )
+
+
+def escape_md(text: str) -> str:
+    return re.sub(r'([_*\[\]()~`>#+\-=|{}.!\\])', r'\\\1', text)
+
+
+def format_test_result(correct_answers: int, total_questions: int) -> str:
+    """
+    Форматирует текст с результатами теста для отправки пользователю.
+
+    Args:
+        correct_answers (int): Количество правильных ответов.
+        total_questions (int): Общее количество вопросов.
+
+    Returns:
+        str: Текст с результатами теста в формате MarkdownV2.
+    """
+
+    incorrect_answers = total_questions - correct_answers
+    return (
+        f"🎉 *Тест завершён!*\n\n"
+        f"✅ *Правильных ответов:* {correct_answers}\n"
+        f"❌ *Неправильных ответов:* {incorrect_answers}\n\n"
+        f"📊 *Результат:* {correct_answers}/{total_questions}\n"
+    )

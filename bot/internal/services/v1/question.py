@@ -1,7 +1,11 @@
 import random
 
+from aiogram.fsm.context import FSMContext
+
 from bot.internal.repository.v1.postgresql.question import QuestionRepository
 from bot.pkg.models import v1 as models
+from bot.pkg.models.sql_models.question import DifficultyLevel
+from bot.utils import save_message_id
 
 
 class QuestionService:
@@ -36,6 +40,29 @@ class QuestionService:
                     question.correct_option = key
                     break
 
+        return questions
+
+    async def get_questions_or_alert(
+            self,
+            category: str,
+            level: str,
+            chat_id: int,
+            state: FSMContext,
+            bot
+    ) -> list:
+        cmd = models.QuestionReadCommand(
+            category=category.capitalize(),
+            difficulty=DifficultyLevel[level.upper()],
+            limit=10
+        )
+        questions = await self.get_questions(cmd)
+        if not questions:
+            msg = await bot.send_message(
+                chat_id=chat_id,
+                text="❌ К сожалению, вопросы для этой темы/уровня не найдены."
+            )
+            await save_message_id(state, msg.message_id)
+            return []
         return questions
 
 

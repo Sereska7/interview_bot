@@ -24,7 +24,7 @@ class User(BaseUser):
     username: str
     first_name: str
     registered_at: datetime
-    last_activity: datetime
+    last_activity: datetime | None
     score: int
 
 
