@@ -43,12 +43,12 @@ class QuestionService:
         return questions
 
     async def get_questions_or_alert(
-            self,
-            category: str,
-            level: str,
-            chat_id: int,
-            state: FSMContext,
-            bot
+        self,
+        category: str,
+        level: str,
+        chat_id: int,
+        state: FSMContext,
+        bot
     ) -> list[models.Question] | None:
         cmd = models.QuestionReadCommand(
             category=category.capitalize(),
@@ -65,6 +65,33 @@ class QuestionService:
             await save_message_id(state, msg.message_id)
             return []
         return questions
+
+    async def get_random_question(
+        self,
+        exclude_ids: list[int] | None = None
+    ) -> models.Question:
+        """"""
+
+        question = await self.question_repository.get_random_question(exclude_ids)
+
+        if question.options:
+            options = question.options
+            correct_key = question.correct_option
+            correct_value = options[correct_key]
+
+            keys = list(options.keys())
+            values = list(options.values())
+
+            random.shuffle(values)
+            new_options = dict(zip(keys, values))
+            question.options = new_options
+
+            for key, value in new_options.items():
+                if value == correct_value:
+                    question.correct_option = key
+                    break
+
+        return question
 
 
 

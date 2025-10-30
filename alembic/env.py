@@ -7,7 +7,10 @@ from alembic import context
 
 from bot.pkg.settings import settings
 from bot.pkg.models.base_model import Base
-from bot.pkg.models.sql_models import User, Question, Category, Result, Session
+from bot.pkg.models.sql_models import (User, Question, Category, Result,
+                                       Session, Subscription, UserProfile,
+                                       UserStatistics, ExamResult, QuestionFeedback,
+                                       InterviewQuestion)
 
 # Добавляем проект в sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))

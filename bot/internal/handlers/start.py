@@ -1,5 +1,5 @@
 from aiogram import Router, types, F
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from dependency_injector.wiring import Provide, inject
 
@@ -7,7 +7,7 @@ from bot.pkg.keyboards.main import main_menu_kb
 from bot.internal.services.v1 import Services as V1Services
 from bot.internal.services.v1.user import UserService
 from bot.pkg.models import v1 as models
-from bot.utils.constants import WELCOME_TEXT, TEXT_MAIN_MENU, escape_md
+from bot.utils.constants import WELCOME_TEXT, TEXT_MAIN_MENU
 from bot.utils import delete_old_messages, save_message_id
 
 
@@ -21,18 +21,6 @@ async def start_command(
     state: FSMContext,
     user_service: UserService = Provide[V1Services.user_service]
 ):
-    """
-    Обрабатывает команду /start и инициализирует пользователя.
-
-    Args:
-        message (types.Message): Объект входящего сообщения от Telegram.
-        state (FSMContext): Контекст состояний FSM для текущего пользователя.
-        user_service (UserService): Сервис для создания или обновления пользователя.
-
-    Returns:
-        None: Отправляет приветственное сообщение с главным меню и обновляет состояние пользователя.
-    """
-
     await delete_old_messages(message.bot, message.chat.id, state)
     await message.delete()
 
@@ -41,11 +29,10 @@ async def start_command(
         username=message.from_user.username,
         first_name=message.from_user.first_name
     )
-
     user = await user_service.create_user(cmd)
     await state.update_data(user_id=user.user_id)
 
-    start_msg = await message.answer(
+    msg = await message.answer(
         WELCOME_TEXT,
         reply_markup=main_menu_kb,
         parse_mode="Markdown"
@@ -59,8 +46,90 @@ async def start_command(
         "answers": []
     })
 
+    await save_message_id(state, msg.message_id)
+
+
+@router.message(Command("menu"))
+async def show_menu(
+    message: types.Message,
+    state: FSMContext,
+):
+    await delete_old_messages(message.bot, message.chat.id, state)
+
+    await state.update_data({
+        "topic": None,
+        "level": None,
+        "questions": None,
+        "current_q": 0,
+        "answers": []
+    })
+    start_msg = await message.answer(
+        TEXT_MAIN_MENU,
+        reply_markup=main_menu_kb,
+        parse_mode="Markdown"
+    )
+
+    await message.delete()
     await save_message_id(state, start_msg.message_id)
-    await state.update_data(start_msg_id=start_msg.message_id)
+
+
+@router.message(Command("help"))
+async def help_command(
+    message: types.Message,
+    state: FSMContext,
+):
+    await delete_old_messages(message.bot, message.chat.id, state)
+
+    msg = await message.answer(
+        "❓ <b>Помощь</b>\n\n"
+        "Бот предназначен для подготовки к IT-собеседованиям.\n"
+        "Доступные команды:\n"
+        "— /menu — открыть главное меню\n"
+        "— /progress — ваш прогресс\n"
+        "— /buy — подписка PRO\n"
+        "— /feedback — написать отзыв\n",
+        parse_mode="HTML"
+    )
+
+    await message.delete()
+    await save_message_id(state, msg.message_id)
+
+
+@router.message(Command("about"))
+async def about_command(
+    message: types.Message,
+    state: FSMContext,
+):
+    await delete_old_messages(message.bot, message.chat.id, state)
+
+    msg =await message.answer(
+        "ℹ️ <b>О боте</b>\n\n"
+        "Этот бот создан для подготовки к IT-собеседованиям.\n"
+        "Проект развивается с любовью ❤️\n\n"
+        "Автор: @your_nickname",
+        parse_mode="HTML"
+    )
+
+    await message.delete()
+    await save_message_id(state, msg.message_id)
+
+
+@router.message(Command("feedback"))
+async def feedback_command(
+    message: types.Message,
+    state: FSMContext,
+):
+    await delete_old_messages(message.bot, message.chat.id, state)
+
+    msg = await message.answer(
+        "💬 <b>Обратная связь</b>\n\n"
+        "Есть идеи или замечания?\n"
+        "Напиши сюда: @your_feedback_bot или оставь отзыв прямо здесь.",
+        parse_mode="HTML"
+    )
+
+    await message.delete()
+    await save_message_id(state, msg.message_id)
 
 
 @router.callback_query(F.data == "back_main")

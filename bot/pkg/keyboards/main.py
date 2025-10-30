@@ -11,7 +11,10 @@ main_menu_kb = ReplyKeyboardMarkup(
             KeyboardButton(text="🕐 Экзамен"),
         ],
         [
-            KeyboardButton(text="📊 Прогресс"),
+            KeyboardButton(text="👤 Личный кабинет"),
+        ],
+        [
+        KeyboardButton(text="💎 Подписка"),
         ],
     ],
     resize_keyboard=True,

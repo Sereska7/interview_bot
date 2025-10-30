@@ -19,7 +19,7 @@ class Session(BasesSession):
 
     session_id: int
     user_id: UUID
-    category: str
+    category_id: int | None
     started_at: datetime
     finished_at: datetime | None
     score: int | None

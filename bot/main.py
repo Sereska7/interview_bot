@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from bot.internal.handlers import routers
 from bot.pkg.settings import settings
 from bot.configuration import __containers__
-
+from bot.utils.set_commands import set_my_commands
 
 
 async def main():
@@ -13,6 +13,7 @@ async def main():
 
     bot = Bot(token=settings.BotSettings.BOT_TOKEN)
     dp = Dispatcher()
+    await set_my_commands(bot)
 
     # Роутеры
     for router in routers:

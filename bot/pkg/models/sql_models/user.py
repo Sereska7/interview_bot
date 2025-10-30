@@ -62,3 +62,13 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan"
     )
+    subscription = relationship(
+        "Subscription",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        uselist=False
+    )
+    profile = relationship("UserProfile", back_populates="user", cascade="all, delete-orphan", uselist=False)
+    feedbacks = relationship("QuestionFeedback", back_populates="user", cascade="all, delete-orphan")
+    exams = relationship("ExamResult", back_populates="user", cascade="all, delete-orphan")
+    statistics = relationship("UserStatistics", back_populates="user", cascade="all, delete-orphan", uselist=False)

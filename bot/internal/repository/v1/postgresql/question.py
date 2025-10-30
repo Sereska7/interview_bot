@@ -40,3 +40,27 @@ class QuestionRepository(Repository):
             questions = result.scalars().all()
 
             return questions
+
+    @collect_response
+    async def get_random_question(
+        self,
+        exclude_ids: list[int] | None = None
+    ) -> models.Question:
+        """"""
+        async with get_connection() as session:
+            stmt = select(Question)
+
+            if exclude_ids:
+                stmt = stmt.where(~Question.question_id.in_(exclude_ids))
+
+            stmt = stmt.order_by(func.random()).limit(1)
+
+            result = await session.execute(stmt)
+            question = result.scalar_one_or_none()
+
+            if not question:
+                fallback_stmt = select(Question).order_by(func.random()).limit(1)
+                result = await session.execute(fallback_stmt)
+                question = result.scalar_one_or_none()
+
+            return question

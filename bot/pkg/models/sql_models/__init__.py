@@ -3,3 +3,9 @@ from bot.pkg.models.sql_models.session import Session
 from bot.pkg.models.sql_models.result import Result
 from bot.pkg.models.sql_models.question import Question
 from bot.pkg.models.sql_models.category import Category
+from bot.pkg.models.sql_models.subscription import Subscription
+from bot.pkg.models.sql_models.interview_question import InterviewQuestion
+from bot.pkg.models.sql_models.exam_result import ExamResult
+from bot.pkg.models.sql_models.question_feedback import QuestionFeedback
+from bot.pkg.models.sql_models.user_profile import UserProfile
+from bot.pkg.models.sql_models.user_statistics import UserStatistics

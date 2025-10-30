@@ -15,4 +15,5 @@ class Category(Base):
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     questions = relationship("Question", back_populates="category_rel", cascade="all, delete-orphan")
-
+    kb_questions = relationship("InterviewQuestion", back_populates="category", cascade="all, delete-orphan")
+    sessions = relationship("Session", back_populates="category")

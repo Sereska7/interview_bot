@@ -24,7 +24,7 @@ class Result(BaseResult):
     result_id: int
     user_id: UUID
     question_id: int
-    session_id: int
+    session_id: int | None
     chosen_option: str
     is_correct: bool
     answered_at: datetime
@@ -45,7 +45,7 @@ class ResultResponse(BaseResult):
 class ResultCreateCommand(BaseResult):
 
     user_id: UUID
-    session_id: int
+    session_id: int | None
     question_id: int
     chosen_option: str
     is_correct: bool
