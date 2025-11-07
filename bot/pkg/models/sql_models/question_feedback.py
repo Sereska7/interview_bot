@@ -11,7 +11,6 @@ class FeedbackMark(str, enum.Enum):
     KNOW = "know"        # ✅ Знаю
     HARD = "hard"        # ⚙️ Сложно
     UNKNOWN = "unknown"  # ❌ Не знаю
-    FAVORITE = "favorite"  # ⭐ Избранное
 
 
 class QuestionFeedback(Base):

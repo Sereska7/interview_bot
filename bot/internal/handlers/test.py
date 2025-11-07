@@ -4,15 +4,17 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 from dependency_injector.wiring import Provide, inject
 
-from bot.internal.services.v1 import Services as V1Services, UserService
+from bot.internal.services.v1 import Services as V1Services
 from bot.internal.handlers.start import handle_back
 from bot.pkg.keyboards.level import level_keyboard
-from bot.pkg.keyboards.test import keyboard_test, start_test_kb, result_answers_kb
+from bot.pkg.keyboards.test import category_kb, start_test_kb, result_answers_kb, summary_kb, category_kb_return, \
+    level_keyboard_return
 from bot.internal.services.v1.question import QuestionService
 from bot.internal.services.v1.result import ResultService
 from bot.internal.services.v1.session import SessionService
+from bot.internal.services.v1.category import CategoryService
 from bot.pkg.states.test_state import TestStates
-from bot.utils.constants import TEST_TEXT, test_topic, text_level, format_test_result_detailed
+from bot.utils.constants import TEST_TEXT, test_topic, format_test_result_detailed, summary_text
 from bot.utils.flow.test_flow import send_next_question
 from bot.pkg.models import v1 as models
 from bot.utils import delete_old_messages, save_message_id
@@ -26,7 +28,7 @@ router = Router()
 async def test_section(
     message: types.Message,
     state: FSMContext,
-    user_service: UserService = Provide[V1Services.user_service]
+    category_service: CategoryService = Provide[V1Services.category_service],
 ):
     """
     Обрабатывает нажатие кнопки '🧠 Пройти тест' и переводит пользователя в раздел тестов.
@@ -34,41 +36,129 @@ async def test_section(
     Args:
         message (types.Message): Объект входящего сообщения от Telegram.
         state (FSMContext): Контекст состояний FSM для текущего пользователя.
-        user_service (UserService): Сервис для работы с пользователями.
 
     Returns:
         None: Очищает старые сообщения, устанавливает состояние выбора темы,
         отправляет сообщение с клавиатурой выбора теста и сохраняет message_id.
     """
 
-    data = await state.get_data()
-    user_id = data.get("user_id")
-    if not user_id:
-        user = await user_service.get_by_telegram_id(message.from_user.id)
-        await state.update_data(user_id=user.user_id)
-
     await delete_old_messages(message.bot, message.chat.id, state)
     await state.set_state(TestStates.select_topic)
     await message.delete()
 
+    categories = await category_service.get_categories()
+    await state.update_data(categories=categories)
+
     msg = await message.answer(
         text=TEST_TEXT,
-        reply_markup=keyboard_test,
+        reply_markup=category_kb(categories),
         parse_mode="HTML"
     )
     await save_message_id(state, msg.message_id)
 
 
+@router.callback_query(F.data == "retopic")
+async def handle_retopic_entry(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    categories = data.get("categories")
+
+    await state.set_state(TestStates.select_topic)
+    await callback.message.edit_text(
+        text="📘 Выберите новую тему:",
+        reply_markup=category_kb_return(categories),
+        parse_mode="HTML"
+    )
+
+
+@router.callback_query(F.data.startswith("retopic:"))
+async def handle_retopic_choose(callback: CallbackQuery, state: FSMContext):
+    _, new_topic = callback.data.split(":", 1)
+    data = await state.get_data()
+    level = data.get("level")
+
+    await state.update_data(topic=new_topic)
+    await state.set_state(TestStates.ready_to_start)
+
+    await callback.message.edit_text(
+        text=summary_text(new_topic, level),
+        reply_markup=summary_kb(new_topic, level),
+        parse_mode="HTML"
+    )
+
+
+@router.callback_query(F.data.startswith("cancel_retopic"))
+async def handle_cancel_retopic_entry(callback: CallbackQuery, state: FSMContext):
+    """"""
+
+    data = await state.get_data()
+    topic = data.get("topic")
+    level = data.get("level")
+
+    await callback.message.edit_text(
+        text=summary_text(topic, level),
+        reply_markup=summary_kb(topic, level),
+        parse_mode="HTML"
+    )
+
+
+@router.callback_query(F.data == "relevel")
+async def handle_relevel_entry(callback: CallbackQuery, state: FSMContext):
+    """
+    ⚡ Обрабатывает выбор нового уровня сложности.
+    Показывает клавиатуру уровней, после выбора возвращает к экрану-резюме.
+    """
+    data = await state.get_data()
+    topic = data.get("topic")
+
+    await state.set_state(TestStates.select_level)
+    await callback.message.edit_text(
+        text=f"⚡ Выберите новый уровень сложности для темы <b>{topic}</b>:",
+        reply_markup=level_keyboard_return(topic),
+        parse_mode="HTML"
+    )
+
+
+@router.callback_query(F.data.startswith("relevel:"))
+async def handle_relevel_choose(callback: CallbackQuery, state: FSMContext):
+    """
+    После выбора нового уровня — возвращаемся к экрану-резюме.
+    """
+    _, topic, level = callback.data.split(":")
+    await state.update_data(level=level)
+
+    await state.set_state(TestStates.ready_to_start)
+    await callback.message.edit_text(
+        text=summary_text(topic, level),
+        reply_markup=summary_kb(topic, level),
+        parse_mode="HTML"
+    )
+
+
+@router.callback_query(F.data.startswith("cancel_relevel"))
+async def handle_cancel_relevel_entry(callback: CallbackQuery, state: FSMContext):
+    """"""
+
+    data = await state.get_data()
+    topic = data.get("topic")
+    level = data.get("level")
+
+    await callback.message.edit_text(
+        text=summary_text(topic, level),
+        reply_markup=summary_kb(topic, level),
+        parse_mode="HTML"
+    )
+
+
 @router.callback_query(F.data.startswith("test_topic:"), StateFilter(TestStates.select_topic))
 async def handle_topic_choice(
-    query: CallbackQuery,
+    callback: CallbackQuery,
     state: FSMContext
 ):
     """
     Обрабатывает выбор темы пользователем при нажатии кнопки теста.
 
     Args:
-        query (CallbackQuery): Объект callback запроса от Telegram.
+        callback (CallbackQuery): Объект callback запроса от Telegram.
         state (FSMContext): Контекст состояний FSM для текущего пользователя.
 
     Returns:
@@ -76,30 +166,29 @@ async def handle_topic_choice(
         переводит пользователя на выбор уровня сложности и редактирует сообщение с клавиатурой.
     """
 
-    topic = query.data.split(":")[1]
+    topic = callback.data.split(":")[1]
 
     if topic == "back":
-        await handle_back(query, state)
+        await handle_back(callback, state)
         return
 
     await state.update_data(topic=topic, current_q=0, answers=[])
     await state.set_state(TestStates.select_level)
 
-    await query.message.edit_text(
+    await callback.message.edit_text(
         text=test_topic(topic),
         reply_markup=level_keyboard(topic),
         parse_mode="HTML"
     )
-    await query.answer()
 
 
 @router.callback_query(F.data.startswith("level:"), StateFilter(TestStates.select_level))
-async def handle_level_choice(query: CallbackQuery, state: FSMContext):
+async def handle_level_choice(callback: CallbackQuery, state: FSMContext):
     """
     Обрабатывает выбор уровня сложности пользователем при нажатии кнопки.
 
     Args:
-        query (CallbackQuery): Объект callback запроса от Telegram.
+        callback (CallbackQuery): Объект callback запроса от Telegram.
         state (FSMContext): Контекст состояний FSM для текущего пользователя.
 
     Returns:
@@ -108,14 +197,17 @@ async def handle_level_choice(query: CallbackQuery, state: FSMContext):
         Если выбран "back", возвращает пользователя к выбору темы.
     """
 
-    _, topic, level = query.data.split(":")
+    _, topic, level = callback.data.split(":")
+
+    data = await state.get_data()
+    categories = data.get("categories")
 
 
     if level == "back":
         await state.set_state(TestStates.select_topic)
-        await query.message.edit_text(
-            text=TEST_TEXT,
-            reply_markup=keyboard_test,
+        await callback.message.edit_text(
+            text=test_topic(topic),
+            reply_markup=category_kb(categories),
             parse_mode="HTML"
         )
         return
@@ -123,19 +215,17 @@ async def handle_level_choice(query: CallbackQuery, state: FSMContext):
     await state.update_data(level=level, topic=topic, current_q=1, answers=[])
     await state.set_state(TestStates.ready_to_start)
 
-    await query.message.edit_text(
-        text=text_level(topic, level),
-        reply_markup=start_test_kb(topic, level),
+    await callback.message.edit_text(
+        text=summary_text(topic, level),
+        reply_markup=summary_kb(topic, level),
         parse_mode="HTML"
     )
-
-    await query.answer()
 
 
 @router.callback_query(F.data.startswith("start_test:"), StateFilter(TestStates.ready_to_start))
 @inject
 async def start_test(
-    query: CallbackQuery,
+    callback: CallbackQuery,
     state: FSMContext,
     question_service: QuestionService = Provide[V1Services.question_service],
     session_service: SessionService = Provide[V1Services.session_service],
@@ -144,7 +234,7 @@ async def start_test(
     Обрабатывает нажатие кнопки 'Начать тест' и запускает тестирование пользователя.
 
     Args:
-        query (CallbackQuery): Объект callback запроса от Telegram.
+        callback (CallbackQuery): Объект callback запроса от Telegram.
         state (FSMContext): Контекст состояний FSM для текущего пользователя.
         question_service (QuestionService): Сервис для получения вопросов.
         session_service (SessionService): Сервис для создания сессий.
@@ -155,28 +245,22 @@ async def start_test(
         Если выбран "back", возвращает пользователя к выбору уровня.
     """
 
-    _, topic, level = query.data.split(":")
+    _, topic, level = callback.data.split(":")
 
     if level == "back":
         await state.set_state(TestStates.select_level)
-        await query.message.edit_text(
+        await callback.message.edit_text(
             text=test_topic(topic),
             reply_markup=level_keyboard(topic),
             parse_mode="HTML"
         )
-        await query.answer()
         return
 
-    try:
-        await query.message.delete()
-    except Exception:
-        pass
-
     questions = await question_service.get_questions_or_alert(
-        topic, level, query.message.chat.id, state, query.message.bot
+        topic, level, callback.message.chat.id, state, callback
     )
     if not questions:
-        await query.answer()
+        await callback.answer()
         return
 
     data = await state.get_data()
@@ -197,8 +281,7 @@ async def start_test(
     )
 
     await state.set_state(TestStates.in_progress)
-    await send_next_question(query.message.chat.id, state, query.message.bot)
-    await query.answer()
+    await send_next_question(callback.message.chat.id, state, callback.message.bot)
 
 
 @router.callback_query(F.data.startswith("answer:"), StateFilter(TestStates.in_progress))
@@ -306,7 +389,6 @@ async def view_answers(
         parse_mode="HTML",
         reply_markup=result_answers_kb
     )
-    await callback.answer()
 
 
 
@@ -427,3 +509,21 @@ async def retry_test(
     await state.update_data(current_message_id=new_message_id)
 
     await callback.answer()
+
+
+@router.callback_query(F.data == "back_to_test_section")
+async def back_to_test_section(callback: CallbackQuery, state: FSMContext):
+    """Возврат в раздел тест."""
+
+    await state.set_state(TestStates.select_topic)
+    data = await state.get_data()
+    categories = data.get("categories")
+
+    await callback.message.edit_text(
+        text=TEST_TEXT,
+        reply_markup=category_kb(categories),
+        parse_mode="HTML"
+    )
+
+#TODO
+# Подумать над наполненностью раздела ТЕСТ

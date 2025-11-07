@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from bot.internal.handlers import routers
 from bot.pkg.settings import settings
 from bot.configuration import __containers__
+from bot.configuration.middleware import Middlewares
 from bot.utils.set_commands import set_my_commands
 
 
@@ -14,6 +15,10 @@ async def main():
     bot = Bot(token=settings.BotSettings.BOT_TOKEN)
     dp = Dispatcher()
     await set_my_commands(bot)
+
+    middlewares = Middlewares()
+
+    dp.update.middleware(middlewares.user_context_middleware())
 
     # Роутеры
     for router in routers:

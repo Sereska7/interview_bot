@@ -9,8 +9,8 @@ class UserService:
 
     async def create_user(
         self,
-        cmd: models.CreateUser
-    ):
+        cmd: models.UserCreateCommand
+    ) -> models.User:
         """"""
         existing_user = await self.user_repository.get_by_telegram_id(cmd.telegram_id)
         if existing_user:

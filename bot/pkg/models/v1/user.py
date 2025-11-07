@@ -8,7 +8,7 @@ from bot.pkg.models.base import BaseModel
 
 __all__ = [
     "User",
-    "CreateUser"
+    "UserCreateCommand"
 ]
 
 
@@ -28,7 +28,7 @@ class User(BaseUser):
     score: int
 
 
-class CreateUser(BaseUser):
+class UserCreateCommand(BaseUser):
     """Create User model."""
 
     telegram_id: int

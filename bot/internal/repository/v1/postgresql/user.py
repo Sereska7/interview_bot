@@ -24,8 +24,8 @@ class UserRepository(Repository):
 
     @collect_response
     async def create(
-            self,
-            cmd: models.CreateUser
+        self,
+        cmd: models.UserCreateCommand
     ) -> models.User:
         async with get_connection() as session:
             user = User(

@@ -1,7 +1,6 @@
 from aiogram.fsm.state import StatesGroup, State
 
-class RQStates(StatesGroup):
+class ExamStates(StatesGroup):
     start = State()  # пользователь только зашёл в раздел
     in_process = State()  # сейчас просматривает вопрос
-    showing_answer = State()  # показан ответ
-    rated = State()  # оценил сложность
+    showing_answer = State()

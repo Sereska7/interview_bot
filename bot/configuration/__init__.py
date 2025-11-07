@@ -1,5 +1,6 @@
 """Collect or build all requirements for startup bot."""
 
+from bot.configuration.middleware import Middlewares
 from bot.internal.services import Services
 from bot.pkg.connectors import Connectors, PostgresSQL
 from bot.pkg.models.core import Container, Containers
@@ -18,6 +19,7 @@ __containers__ = Containers(
                 Container(container=PostgresSQL),
             ],
         ),
+        Container(container=Middlewares)
     ]
 )
 

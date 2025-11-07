@@ -18,13 +18,13 @@ class Repository(ABC):
     Examples:
         >>> from app.pkg.models.user import StrictUser
         >>> from app.pkg.models.user import (
-        ...     CreateUserCommand,
+        ...     UserCreateCommand,
         ...     UpdateUserCommand,
         ...     DeleteUserCommand,
         ...     ReadUserByIdQuery,
         ... )
         >>> class UserRepository(Repository):
-        ...     async def create(self, cmd: CreateUserCommand) -> StrictUser:
+        ...     async def create(self, cmd: UserCreateCommand) -> StrictUser:
         ...         ...
         ...
         ...     async def read(self, query: ReadUserByIdQuery) -> StrictUser:

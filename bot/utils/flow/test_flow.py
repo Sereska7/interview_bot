@@ -6,7 +6,7 @@ from bot.internal.services.v1 import SessionService
 from bot.internal.services.v1 import Services as V1Services
 from bot.utils import save_message_id
 from bot.pkg.models import v1 as models
-from bot.utils.constants import format_test_result, escape_md
+from bot.utils.constants import format_test_result
 
 
 @inject
@@ -72,8 +72,13 @@ async def send_next_question(
         return msg.message_id
 
     question = questions[current_q]
-    question_text = escape_md(question.question_text)
-    text = f"📘 *Вопрос {current_q + 1}:*\n\n*{question_text}*"
+
+    if isinstance(question, dict):
+        question_text = question.get("title") or question.get("text") or "Без текста"
+    else:
+        question_text = getattr(question, "title", "Без текста")
+
+    text = f"📘 <b>Вопрос {current_q + 1}</b>\n\n{question_text}"
 
     if message_id:
         try:

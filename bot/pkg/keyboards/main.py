@@ -4,7 +4,7 @@ main_menu_kb = ReplyKeyboardMarkup(
     keyboard=[
         [
             KeyboardButton(text="🧠 Пройти тест"),
-            KeyboardButton(text="🎯 Случайный вопрос"),
+            KeyboardButton(text="🎲 Случайный вопрос"),
         ],
         [
             KeyboardButton(text="📚 Сборник вопросов"),
